@@ -178,7 +178,8 @@ export function useChatActions() {
   const uploadAndSend = async (message: Message, mimeType: string) => {
     try {
       const path = await data.uploadMedia(message.localUri as string, message.kind as MediaKind, mimeType);
-      const ready = { ...message, mediaPath: path };
+      // A retried message arrives here as "failed": it is sending again.
+      const ready: Message = { ...message, status: 'pending', mediaPath: path };
       update(message.id, () => ready);
       transmit(ready);
     } catch {
