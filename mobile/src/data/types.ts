@@ -67,6 +67,24 @@ export type Message = {
 
 export type MemoryCategory = 'trip' | 'night' | 'date' | 'simple';
 
+export type NewMemory = {
+  localUri: string;
+  mimeType: string;
+  title: string;
+  category: MemoryCategory;
+  /** YYYY-MM-DD */
+  takenOn: string;
+};
+
+/** A shared project ("Nos projets"). */
+export type Goal = {
+  id: string;
+  title: string;
+  doneAt: string | null;
+  createdAt: string;
+  createdBy: string | null;
+};
+
 export type Memory = {
   id: string;
   title: string;

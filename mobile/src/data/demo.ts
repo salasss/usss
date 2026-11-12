@@ -2,7 +2,7 @@ import { randomUUID } from 'expo-crypto';
 
 import type { RealtimeListener } from '@/data/realtime';
 import type { BubbleData, DataSource } from '@/data/source';
-import type { CalendarEvent, Couple, Memory, Message, Mood } from '@/data/types';
+import type { CalendarEvent, Couple, Goal, Memory, Message, Mood } from '@/data/types';
 import type { Me } from '@/state/session';
 
 export const DEMO_PARTNER_ID = 'demo-partner';
@@ -13,6 +13,11 @@ const MINUTE = 60_000;
 const DAY = 1440 * MINUTE;
 const iso = (offsetMs: number) => new Date(Date.now() + offsetMs).toISOString();
 const day = (offsetDays: number) => iso(offsetDays * DAY).slice(0, 10);
+
+function removeWhere<T>(list: T[], match: (item: T) => boolean) {
+  const index = list.findIndex(match);
+  if (index >= 0) list.splice(index, 1);
+}
 
 const REPLIES = ['Trop mignon 🥰', 'Haha j’adore', 'Moi aussi ❤️', 'On en parle ce soir ?', '😍', 'Tu me manques…'];
 
@@ -75,6 +80,12 @@ function demoBubble(me: Me): BubbleData {
     memory('m6', 'Pique-nique', 'simple', day(-58), true, DEMO_PARTNER_ID),
   ];
 
+  const goals: Goal[] = [
+    { id: 'g1', title: 'Prochain voyage : Lisbonne', doneAt: null, createdAt: iso(-30 * DAY), createdBy: DEMO_PARTNER_ID },
+    { id: 'g2', title: 'Essayer le nouveau resto', doneAt: iso(-3 * DAY), createdAt: iso(-20 * DAY), createdBy: me.id },
+    { id: 'g3', title: 'Apprendre à faire des sushis', doneAt: null, createdAt: iso(-10 * DAY), createdBy: me.id },
+  ];
+
   // Newest first, like the live data.
   const messages: Message[] = [
     message({ id: 'd6', senderId: DEMO_PARTNER_ID, kind: 'image', mediaPath: `${DEMO_MEDIA_PREFIX}night`, createdAt: iso(-12 * MINUTE) }),
@@ -95,11 +106,47 @@ function demoBubble(me: Me): BubbleData {
       events.push(created);
       return created;
     },
+    deleteEvent: async (id) => {
+      removeWhere(events, (e) => e.id === id);
+    },
     listMemories: async () => memories,
+    addMemory: async (input) => {
+      const created: Memory = {
+        id: randomUUID(),
+        title: input.title,
+        note: null,
+        category: input.category,
+        // The picked file itself: mediaUrl() returns it as is.
+        photoPath: input.localUri,
+        takenOn: input.takenOn,
+        isFavorite: false,
+        createdAt: new Date().toISOString(),
+        createdBy: me.id,
+      };
+      memories.unshift(created);
+      return created;
+    },
+    deleteMemory: async (target) => {
+      removeWhere(memories, (m) => m.id === target.id);
+    },
     setMemoryFavorite: async (id, favorite) => {
       const found = memories.find((m) => m.id === id);
       if (found) found.isFavorite = favorite;
     },
+    listGoals: async () => goals,
+    addGoal: async (title) => {
+      const created: Goal = { id: randomUUID(), title, doneAt: null, createdAt: new Date().toISOString(), createdBy: me.id };
+      goals.push(created);
+      return created;
+    },
+    setGoalDone: async (id, done) => {
+      const found = goals.find((g) => g.id === id);
+      if (found) found.doneAt = done ? new Date().toISOString() : null;
+    },
+    deleteGoal: async (id) => {
+      removeWhere(goals, (g) => g.id === id);
+    },
+    subscribeAlbum: () => () => undefined,
     mediaUrl: async (path) => (path.startsWith(DEMO_MEDIA_PREFIX) ? null : path),
     connect: (listener) => demoConnection(me, listener),
   };

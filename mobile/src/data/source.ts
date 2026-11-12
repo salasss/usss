@@ -1,8 +1,19 @@
 import type { RealtimeConnection, RealtimeListener } from '@/data/realtime';
-import type { CalendarEvent, Couple, Memory, Message, Mood, NewEvent } from '@/data/types';
+import type {
+  CalendarEvent,
+  Couple,
+  Goal,
+  Memory,
+  Message,
+  Mood,
+  NewEvent,
+  NewMemory,
+} from '@/data/types';
 import type { Me } from '@/state/session';
 
 export type MediaKind = 'image' | 'voice';
+
+export type AlbumTable = 'memories' | 'goals' | 'events';
 
 /** Data of one couple, available once both partners are in. */
 export interface BubbleData {
@@ -13,8 +24,17 @@ export interface BubbleData {
   listMoods(): Promise<Mood[]>;
   listEvents(): Promise<CalendarEvent[]>;
   addEvent(event: NewEvent): Promise<CalendarEvent>;
+  deleteEvent(id: string): Promise<void>;
   listMemories(): Promise<Memory[]>;
+  addMemory(memory: NewMemory): Promise<Memory>;
+  deleteMemory(memory: Memory): Promise<void>;
   setMemoryFavorite(id: string, favorite: boolean): Promise<void>;
+  listGoals(): Promise<Goal[]>;
+  addGoal(title: string): Promise<Goal>;
+  setGoalDone(id: string, done: boolean): Promise<void>;
+  deleteGoal(id: string): Promise<void>;
+  /** Changes made by the partner on the album tables (Supabase Realtime). */
+  subscribeAlbum(onChange: (table: AlbumTable) => void): () => void;
   /** Displayable URL of a stored media (short-lived signed URL), or null. */
   mediaUrl(path: string): Promise<string | null>;
   /** Realtime channel shared with the partner. */

@@ -3,8 +3,8 @@ import { createContext, useContext, useEffect, useMemo, type PropsWithChildren }
 import { create } from 'zustand';
 
 import type { ConnectionStatus, RealtimeConnection } from '@/data/realtime';
-import type { BubbleData } from '@/data/source';
-import type { CalendarEvent, Memory, Mood, NewEvent } from '@/data/types';
+import type { AlbumTable, BubbleData } from '@/data/source';
+import type { CalendarEvent, Goal, Memory, Mood, NewEvent, NewMemory } from '@/data/types';
 import { useCouple } from '@/state/couple';
 import { useSource } from '@/state/data';
 
@@ -14,6 +14,7 @@ type BubbleState = {
   moods: Record<string, Mood>;
   events: CalendarEvent[];
   memories: Memory[];
+  goals: Goal[];
 };
 
 const INITIAL: BubbleState = {
@@ -22,6 +23,7 @@ const INITIAL: BubbleState = {
   moods: {},
   events: [],
   memories: [],
+  goals: [],
 };
 
 /** Shared state of the couple's bubble; screens subscribe to the slices they need. */
@@ -37,21 +39,25 @@ const byStart = (a: CalendarEvent, b: CalendarEvent) => a.startsAt.localeCompare
  */
 function createBubbleRuntime(data: BubbleData, me: string) {
   let connection: RealtimeConnection | null = null;
+  let unsubscribeAlbum: (() => void) | null = null;
   const listeners = new Set<FrameListener>();
   const notify = (frame: Record<string, unknown>) => listeners.forEach((listen) => listen(frame));
   const send = (frame: Record<string, unknown>) => connection?.send(frame);
 
+  const reloadTable = async (table: AlbumTable) => {
+    try {
+      if (table === 'events') useBubbleStore.setState({ events: [...(await data.listEvents())].sort(byStart) });
+      if (table === 'memories') useBubbleStore.setState({ memories: await data.listMemories() });
+      if (table === 'goals') useBubbleStore.setState({ goals: await data.listGoals() });
+    } catch {
+      // Keep what is shown; the next change or resync will try again.
+    }
+  };
+
   const reload = async () => {
-    const [moods, events, memories] = await Promise.all([
-      data.listMoods().catch(() => null),
-      data.listEvents().catch(() => null),
-      data.listMemories().catch(() => null),
-    ]);
-    useBubbleStore.setState((state) => ({
-      moods: moods ? Object.fromEntries(moods.map((m) => [m.userId, m])) : state.moods,
-      events: events ? [...events].sort(byStart) : state.events,
-      memories: memories ?? state.memories,
-    }));
+    const moods = await data.listMoods().catch(() => null);
+    if (moods) useBubbleStore.setState({ moods: Object.fromEntries(moods.map((m) => [m.userId, m])) });
+    await Promise.all([reloadTable('events'), reloadTable('memories'), reloadTable('goals')]);
   };
 
   return {
@@ -98,11 +104,15 @@ function createBubbleRuntime(data: BubbleData, me: string) {
           }
         },
       });
+      // Memories, projects and dates added by the partner appear live.
+      unsubscribeAlbum = data.subscribeAlbum((table) => void reloadTable(table));
     },
 
     stop() {
       connection?.close();
       connection = null;
+      unsubscribeAlbum?.();
+      unsubscribeAlbum = null;
     },
 
     setMood(energy: number, mood: number) {
@@ -133,6 +143,49 @@ function createBubbleRuntime(data: BubbleData, me: string) {
 
     sendNote(text: string) {
       send({ type: 'message.send', id: randomUUID(), kind: 'text', body: text });
+    },
+
+    async deleteEvent(event: CalendarEvent) {
+      useBubbleStore.setState((state) => ({ events: state.events.filter((e) => e.id !== event.id) }));
+      await data.deleteEvent(event.id).catch(() => reloadTable('events'));
+    },
+
+    async addMemory(memory: NewMemory) {
+      const created = await data.addMemory(memory);
+      useBubbleStore.setState((state) => ({
+        memories: [created, ...state.memories.filter((m) => m.id !== created.id)].sort(
+          (a, b) => b.takenOn.localeCompare(a.takenOn) || b.createdAt.localeCompare(a.createdAt),
+        ),
+      }));
+    },
+
+    async deleteMemory(memory: Memory) {
+      useBubbleStore.setState((state) => ({ memories: state.memories.filter((m) => m.id !== memory.id) }));
+      await data.deleteMemory(memory).catch(() => reloadTable('memories'));
+    },
+
+    async addGoal(title: string) {
+      const created = await data.addGoal(title);
+      useBubbleStore.setState((state) => ({ goals: [...state.goals.filter((g) => g.id !== created.id), created] }));
+    },
+
+    async toggleGoal(goal: Goal) {
+      const doneAt = goal.doneAt ? null : new Date().toISOString();
+      const apply = (value: string | null) =>
+        useBubbleStore.setState((state) => ({
+          goals: state.goals.map((g) => (g.id === goal.id ? { ...g, doneAt: value } : g)),
+        }));
+      apply(doneAt);
+      try {
+        await data.setGoalDone(goal.id, doneAt !== null);
+      } catch {
+        apply(goal.doneAt);
+      }
+    },
+
+    async deleteGoal(goal: Goal) {
+      useBubbleStore.setState((state) => ({ goals: state.goals.filter((g) => g.id !== goal.id) }));
+      await data.deleteGoal(goal.id).catch(() => reloadTable('goals'));
     },
   };
 }
