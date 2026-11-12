@@ -13,6 +13,7 @@ import { AppText } from '@/components/ui/AppText';
 import { Screen } from '@/components/ui/Screen';
 import { TextField } from '@/components/ui/TextField';
 import type { Memory, MemoryCategory } from '@/data/types';
+import { pickedImageType } from '@/lib/media';
 import { useBubble, useBubbleStore } from '@/state/bubble';
 import { colors, radii, spacing } from '@/theme';
 
@@ -65,7 +66,7 @@ export default function MemoriesScreen() {
   const pickPhoto = async () => {
     const result = await launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     const asset = result.canceled ? null : result.assets[0];
-    if (asset) setPhoto({ uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' });
+    if (asset) setPhoto({ uri: asset.uri, mimeType: pickedImageType(asset.uri) });
   };
 
   const confirmDelete = (memory: Memory) =>

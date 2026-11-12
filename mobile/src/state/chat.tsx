@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { MESSAGES_PAGE, messageFromDto, type MessageDto } from '@/data/messages';
 import type { MediaKind } from '@/data/source';
 import type { Message } from '@/data/types';
+import { pickedImageType } from '@/lib/media';
 import { useBubble } from '@/state/bubble';
 import { useSource } from '@/state/data';
 
@@ -195,7 +196,7 @@ export function useChatActions() {
     },
 
     sendMedia: (kind: MediaKind, localUri: string, mimeType: string, durationMs?: number) => {
-      const message = pending({ kind, localUri, durationMs: durationMs ?? null });
+      const message = pending({ kind, localUri, mimeType, durationMs: durationMs ?? null });
       useChatStore.setState((state) => ({ messages: upsert(state.messages, message) }));
       void uploadAndSend(message, mimeType);
     },
@@ -203,7 +204,8 @@ export function useChatActions() {
     retry: (message: Message) => {
       update(message.id, (m) => ({ ...m, status: 'pending' }));
       if (message.kind !== 'text' && !message.mediaPath && message.localUri) {
-        void uploadAndSend(message, message.kind === 'voice' ? 'audio/mp4' : 'image/jpeg');
+        const fallback = message.kind === 'voice' ? 'audio/mp4' : pickedImageType(message.localUri);
+        void uploadAndSend(message, message.mimeType ?? fallback);
       } else {
         transmit(message);
       }

@@ -63,6 +63,8 @@ export type Message = {
   status: 'sent' | 'pending' | 'failed';
   /** Local file shown while the upload is in progress. */
   localUri?: string | null;
+  /** Type of the local file, kept to retry its upload. */
+  mimeType?: string | null;
 };
 
 export type MemoryCategory = 'trip' | 'night' | 'date' | 'simple';

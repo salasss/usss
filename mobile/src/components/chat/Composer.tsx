@@ -13,6 +13,7 @@ import { MAX_VOICE_MS, useVoiceRecorder } from '@/components/chat/useVoiceRecord
 import { AppText } from '@/components/ui/AppText';
 import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { durationLabel } from '@/lib/format';
+import { pickedImageType } from '@/lib/media';
 import { useChatActions } from '@/state/chat';
 import { colors, fonts, radii, spacing } from '@/theme';
 
@@ -77,7 +78,7 @@ export function Composer() {
     const options = { mediaTypes: ['images' as const], quality: 0.75 };
     const result = camera ? await launchCameraAsync(options) : await launchImageLibraryAsync(options);
     const asset = result.canceled ? null : result.assets[0];
-    if (asset) sendMedia('image', asset.uri, asset.mimeType ?? 'image/jpeg');
+    if (asset) sendMedia('image', asset.uri, pickedImageType(asset.uri));
   };
 
   const startVoice = async () => {
