@@ -1,36 +1,44 @@
 import { StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Logo } from '@/components/brand/Logo';
-import { AppText } from '@/components/ui/AppText';
-import { Placeholder } from '@/components/ui/Placeholder';
+import { CoupleHeader } from '@/components/home/CoupleHeader';
+import { CountdownCard } from '@/components/home/CountdownCard';
+import { DailyMomentCard } from '@/components/home/DailyMomentCard';
+import { MoodCard } from '@/components/home/MoodCard';
+import { ProfileButton } from '@/components/home/ProfileButton';
 import { Screen } from '@/components/ui/Screen';
-import { colors, spacing } from '@/theme';
+import { spacing } from '@/theme';
 
 export default function OurSpaceScreen() {
   return (
     <Screen>
-      <View style={styles.header}>
-        <Logo />
+      <View style={styles.top}>
+        <Logo size={30} />
+        <ProfileButton />
       </View>
-      <View style={styles.titles}>
-        <AppText variant="title">Notre espace</AppText>
-        <AppText color={colors.textSecondary}>Un coin rien qu&apos;à vous deux.</AppText>
-      </View>
-      <Placeholder
-        icon="sparkles-outline"
-        title="Bientôt ici"
-        description="L'instant du jour, vos humeurs et le prochain rendez-vous."
-      />
+      <Animated.View entering={FadeInDown.duration(500)}>
+        <CoupleHeader />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(90).duration(500)}>
+        <DailyMomentCard />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.row}>
+        <MoodCard />
+        <CountdownCard />
+      </Animated.View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  top: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    justifyContent: 'space-between',
   },
-  titles: {
-    gap: spacing.xs,
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
 });
