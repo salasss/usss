@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use sqlx::PgPool;
 
-use crate::{auth::JwtVerifier, config::Config, db};
+use crate::{auth::JwtVerifier, config::Config, db, realtime::Hub};
 
 /// Shared state handed to every request handler.
 #[derive(Clone)]
@@ -10,6 +10,7 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub auth: Arc<JwtVerifier>,
     pub db: PgPool,
+    pub hub: Hub,
 }
 
 impl AppState {
@@ -24,6 +25,7 @@ impl AppState {
             config: Arc::new(config),
             auth: Arc::new(auth),
             db,
+            hub: Hub::default(),
         })
     }
 }

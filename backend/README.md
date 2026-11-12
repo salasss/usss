@@ -51,6 +51,35 @@ automatiquement le sien.
 | `invite_expired`   | 410  | code expiré : en générer un nouveau      |
 | `not_paired`       | 404  | aucune bulle à renouveler                |
 
+## Temps réel : `GET /ws`
+
+Une connexion WebSocket par téléphone, authentifiée comme les autres routes,
+réservée aux personnes en couple. Chaque couple connecté a son salon en mémoire.
+Messages, accusés de lecture, réactions et humeurs sont **écrits en base avant
+d'être diffusés** aux deux téléphones. « En train d'écrire » et la présence
+sont simplement relayés.
+
+Trames envoyées par l'app (JSON, champ `type`) :
+
+| `type`           | Champs                                              |
+| ---------------- | --------------------------------------------------- |
+| `message.send`   | `id` (UUID généré par l'app), `kind` (`text`/`image`/`voice`), `body`, `media_path` (`<couple_id>/…`), `duration_ms` |
+| `message.read`   | `until` : tout ce que l'autre a envoyé jusqu'à cette date est lu |
+| `reaction.set`   | `message_id`, `emoji`                               |
+| `reaction.clear` | `message_id`                                        |
+| `mood.set`       | `energy`, `mood` (0 à 100)                          |
+| `typing`         | `active`                                            |
+| `ping`           | (aucun)                                             |
+
+Trames envoyées par le serveur : `ready`, `presence`, `message.new`,
+`message.read`, `reaction`, `mood`, `typing`, `pong`, `error`, et `resync`
+quand une connexion trop lente a manqué des événements (l'app recharge alors
+depuis la base).
+
+Renvoyer un `message.send` avec le même `id` après une reconnexion ne crée
+pas de doublon. Un ping toutes les 25 s maintient la connexion ; sans signe de
+vie pendant 70 s, elle est fermée.
+
 ## Routes
 
 | Méthode | Route            | Auth | Description                              |
@@ -61,6 +90,7 @@ automatiquement le sien.
 | POST    | `/couple`        | oui  | Créer le couple et son code d'invitation |
 | POST    | `/couple/invite` | oui  | Renouveler le code en attendant l'autre  |
 | POST    | `/couple/join`   | oui  | Rejoindre avec un code                   |
+| GET     | `/ws`            | oui  | Canal temps réel du couple (WebSocket)   |
 
 ## Tests
 
