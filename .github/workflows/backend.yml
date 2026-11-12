@@ -119,3 +119,27 @@ jobs:
 
       - name: Tests
         run: cargo test
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the backend image
+        run: docker build --tag usss-backend:ci backend
+
+      - name: Smoke test
+        run: |
+          # The database pool is lazy: /health answers without a database.
+          docker run -d --name api -p 8080:8080 \
+            -e DATABASE_URL=postgres://postgres:postgres@127.0.0.1:1/unused \
+            -e SUPABASE_JWT_SECRET=ci-only-secret-that-is-long-enough \
+            usss-backend:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs api
+          exit 1

@@ -92,6 +92,28 @@ vie pendant 70 s, elle est fermée.
 | POST    | `/couple/join`   | oui  | Rejoindre avec un code                   |
 | GET     | `/ws`            | oui  | Canal temps réel du couple (WebSocket)   |
 
+## Déploiement
+
+L'image Docker ([`Dockerfile`](Dockerfile)) tourne sur tout hébergeur de
+conteneurs qui accepte les WebSockets (Render, Koyeb, Fly.io, Railway, un VPS…).
+La CI la construit et la démarre à chaque changement du backend.
+
+```bash
+docker build -t usss-backend backend
+docker run -p 8080:8080 --env-file backend/.env usss-backend
+```
+
+| Variable              | Valeur                                                        |
+| --------------------- | ------------------------------------------------------------- |
+| `PORT`                | port d'écoute (souvent fourni par l'hébergeur)                |
+| `SUPABASE_URL`        | `https://<projet>.supabase.co`                                |
+| `DATABASE_URL`        | chaîne *Session pooler* (port 5432) de Supabase, `sslmode=require` |
+| `SUPABASE_JWT_SECRET` | uniquement pour les projets signant encore en HS256           |
+
+Ensuite, renseignez l'URL publique HTTPS du backend dans le secret GitHub
+`EXPO_PUBLIC_API_URL` : le prochain APK s'y connectera. Sur une offre gratuite
+qui met le service en veille, la Bulle se reconnecte d'elle-même au réveil.
+
 ## Tests
 
 Les tests d'intégration du couple utilisent une base Supabase Postgres avec
