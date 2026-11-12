@@ -70,8 +70,12 @@ function RootNavigator() {
       <Stack.Protected guard={signedIn && paired}>
         <Stack.Screen name="(tabs)" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !paired}>
+      <Stack.Protected guard={signedIn && coupleKnown && !paired}>
         <Stack.Screen name="pairing" />
+      </Stack.Protected>
+      {/* After an interactive sign-in the splash is gone: wait here, not on pairing. */}
+      <Stack.Protected guard={signedIn && !coupleKnown}>
+        <Stack.Screen name="loading" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" />
