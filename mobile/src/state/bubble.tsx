@@ -82,6 +82,10 @@ function createBubbleRuntime(data: BubbleData, me: string) {
           switch (event.type) {
             case 'ready':
               useBubbleStore.setState({ partnerOnline: event.partnerOnline });
+              // Sent on every (re)connection: what happened while this phone
+              // was away (screen off, app in background) only lives in the database.
+              void reload();
+              notify({ type: 'resync' });
               break;
             case 'presence':
               if (event.userId === partnerId) useBubbleStore.setState({ partnerOnline: event.online });

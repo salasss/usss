@@ -26,17 +26,40 @@ const TYPING_TIMEOUT_MS = 6_000;
 
 const newestFirst = (a: Message, b: Message) => b.createdAt.localeCompare(a.createdAt);
 
-function upsert(messages: Message[], incoming: Message): Message[] {
+/**
+ * Merges one message. Rows read from the database are authoritative for
+ * reactions and read receipts (they may have changed while offline); live
+ * frames only add to what is known.
+ */
+function upsert(messages: Message[], incoming: Message, fromDatabase = false): Message[] {
   const index = messages.findIndex((m) => m.id === incoming.id);
   if (index < 0) return [incoming, ...messages].sort(newestFirst);
   const current = messages[index];
   const next = [...messages];
   next[index] = {
     ...incoming,
-    reactions: { ...current.reactions, ...incoming.reactions },
+    reactions: fromDatabase ? incoming.reactions : { ...current.reactions, ...incoming.reactions },
+    readAt: fromDatabase ? incoming.readAt : (incoming.readAt ?? current.readAt),
     localUri: incoming.localUri ?? current.localUri,
   };
   return next.sort(newestFirst);
+}
+
+/**
+ * Applies the latest page from the database. When the page does not reach the
+ * newest message already shown, messages were missed in between: older ones
+ * are dropped (pagination brings them back) rather than leaving a hole.
+ */
+function mergeLatest(messages: Message[], page: Message[]): Pick<ChatState, 'messages' | 'hasMore'> {
+  const full = page.length >= MESSAGES_PAGE;
+  const oldestInPage = page[page.length - 1]?.createdAt;
+  const newestShown = messages.find((m) => m.status === 'sent')?.createdAt;
+  const gap = full && oldestInPage !== undefined && newestShown !== undefined && oldestInPage > newestShown;
+  const base = gap ? messages.filter((m) => m.status !== 'sent') : messages;
+  return {
+    messages: page.reduce((list, message) => upsert(list, message, true), base),
+    hasMore: full,
+  };
 }
 
 function update(id: string, change: (message: Message) => Message) {
@@ -58,11 +81,7 @@ export function ChatSync() {
       data
         .listMessages()
         .then((page) =>
-          useChatStore.setState((state) => ({
-            messages: page.reduce(upsert, state.messages),
-            loading: false,
-            hasMore: page.length >= MESSAGES_PAGE,
-          })),
+          useChatStore.setState((state) => ({ ...mergeLatest(state.messages, page), loading: false })),
         )
         .catch(() => useChatStore.setState({ loading: false }));
     void loadLatest();
@@ -220,7 +239,7 @@ export function useChatActions() {
       try {
         const page = await data.listMessages(oldest.createdAt);
         useChatStore.setState((state) => ({
-          messages: page.reduce(upsert, state.messages),
+          messages: page.reduce((list, message) => upsert(list, message, true), state.messages),
           hasMore: page.length >= MESSAGES_PAGE,
           loading: false,
         }));
