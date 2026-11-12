@@ -74,7 +74,8 @@
           }
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "./plugins/with-release-signing"
     ],
     "experiments": {
       "typedRoutes": true,

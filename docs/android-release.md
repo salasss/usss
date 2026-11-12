@@ -1,0 +1,55 @@
+# APK de release et signature
+
+La CI ([`.github/workflows/android.yml`](../.github/workflows/android.yml))
+compile un APK de release à chaque push sur `main` qui touche `mobile/`.
+
+## Signature
+
+| Secrets GitHub présents ?  | APK signé avec          | Usage                                  |
+| -------------------------- | ----------------------- | -------------------------------------- |
+| Non                        | keystore de **debug**   | tests sur vos téléphones               |
+| Oui                        | keystore de **release** | version durable (et Play Store un jour) |
+
+Android n'installe une mise à jour que si elle est signée avec la **même clé**.
+En passant de debug à release, désinstallez une fois l'ancienne version.
+
+### Créer le keystore de release (une seule fois)
+
+```bash
+scripts/android-keystore.sh            # crée usss-release.keystore (alias "usss")
+```
+
+Le script demande un mot de passe, puis affiche :
+
+- les empreintes **SHA-1 / SHA-256** à enregistrer sur un client OAuth Android
+  dans Google Cloud (voir [android-google-auth.md](android-google-auth.md)) ;
+- les secrets à créer dans **Settings → Secrets and variables → Actions** :
+
+| Secret                      | Valeur                                   |
+| --------------------------- | ---------------------------------------- |
+| `ANDROID_KEYSTORE_BASE64`   | `base64 -w0 usss-release.keystore`       |
+| `ANDROID_KEYSTORE_PASSWORD` | mot de passe du keystore                 |
+| `ANDROID_KEY_ALIAS`         | `usss`                                   |
+| `ANDROID_KEY_PASSWORD`      | même mot de passe (keystore PKCS12)      |
+
+Rangez le fichier `.keystore` et son mot de passe dans un gestionnaire de mots
+de passe. Ne les commitez jamais (`*.keystore` est ignoré par git).
+
+### Comment ça marche
+
+`android/` est régénéré à chaque build par `expo prebuild`. Le plugin
+[`mobile/plugins/with-release-signing.js`](../mobile/plugins/with-release-signing.js)
+ajoute une configuration de signature `release` qui lit
+`USSS_UPLOAD_STORE_FILE`, `USSS_UPLOAD_STORE_PASSWORD`, `USSS_UPLOAD_KEY_ALIAS`
+et `USSS_UPLOAD_KEY_PASSWORD` (propriétés Gradle ou variables d'environnement).
+En CI, le keystore est décodé dans un dossier temporaire du runner, puis
+supprimé en fin de job. La signature de l'APK est vérifiée avec `apksigner`.
+
+Pour signer un build local :
+
+```bash
+cd mobile && npx expo prebuild --platform android
+USSS_UPLOAD_STORE_FILE=/chemin/usss-release.keystore \
+USSS_UPLOAD_STORE_PASSWORD=*** USSS_UPLOAD_KEY_ALIAS=usss USSS_UPLOAD_KEY_PASSWORD=*** \
+  ./android/gradlew -p android assembleRelease
+```

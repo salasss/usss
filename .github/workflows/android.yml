@@ -73,13 +73,39 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
 
+      - name: Prepare release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::warning title=Debug signature::ANDROID_KEYSTORE_BASE64 is not set: the APK is signed with the debug keystore."
+            exit 0
+          fi
+          keystore="$RUNNER_TEMP/usss-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          echo "USSS_UPLOAD_STORE_FILE=$keystore" >> "$GITHUB_ENV"
+
       - name: Build release APK
         working-directory: mobile/android
+        env:
+          # Read by plugins/with-release-signing.js through Gradle.
+          USSS_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          USSS_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          USSS_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: >
           ./gradlew assembleRelease
           --no-daemon
           -PreactNativeArchitectures="$ABIS"
           -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
-      - name: Show APK
-        run: ls -lh android/app/build/outputs/apk/release/
+      - name: Verify APK signature
+        run: |
+          apk=$(ls android/app/build/outputs/apk/release/*.apk)
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
+          "${build_tools}apksigner" verify --print-certs "$apk" \
+            | grep -E "Signer #1 certificate (DN|SHA-256 digest|SHA-1 digest)"
+          ls -lh "$apk"
+
+      - name: Remove release keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/usss-release.keystore"
