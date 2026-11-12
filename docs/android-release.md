@@ -3,6 +3,23 @@
 La CI ([`.github/workflows/android.yml`](../.github/workflows/android.yml))
 compile un APK de release à chaque push sur `main` qui touche `mobile/`.
 
+## Installer l'APK sur un téléphone
+
+1. GitHub → onglet **Actions** → workflow **Android APK** → dernier run vert.
+2. En bas du run, section **Artifacts** : `usss-<version>-<commit>` (le résumé
+   du job contient aussi un lien direct). Le téléchargement est un `.zip`
+   contenant l'APK ; il faut être connecté à GitHub.
+3. Copiez l'APK sur le téléphone (ou téléchargez-le depuis le téléphone),
+   autorisez l'installation depuis cette source, puis ouvrez-le.
+
+Les artefacts sont conservés 30 jours. Pour une version durable, poussez un
+tag : `git tag v1.0.0 && git push origin v1.0.0`. L'APK est alors attaché à une
+**Release GitHub**, téléchargeable directement, sans zip.
+
+Par défaut, l'APK cible `arm64-v8a` (la quasi-totalité des téléphones
+récents). Pour un vieux téléphone 32 bits, lancez le workflow à la main
+(*Run workflow*) avec `armeabi-v7a,arm64-v8a`.
+
 ## Signature
 
 | Secrets GitHub présents ?  | APK signé avec          | Usage                                  |

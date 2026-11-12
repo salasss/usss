@@ -3,6 +3,8 @@ name: Android APK
 on:
   push:
     branches: [main]
+    # A version tag (v1.0.0...) also publishes the APK as a GitHub release.
+    tags: ["v*"]
     paths:
       - "mobile/**"
       - ".github/workflows/android.yml"
@@ -30,6 +32,8 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      artifact: ${{ steps.apk.outputs.name }}
     defaults:
       run:
         working-directory: mobile
@@ -111,3 +115,57 @@ jobs:
       - name: Remove release keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/usss-release.keystore"
+
+      - name: Name the APK
+        id: apk
+        run: |
+          version=$(node -p "require('./app.json').expo.version")
+          name="usss-${version}-${GITHUB_SHA::7}"
+          mkdir -p "$RUNNER_TEMP/apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/apk/$name.apk"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ runner.temp }}/apk/${{ steps.apk.outputs.name }}.apk
+          if-no-files-found: error
+          retention-days: 30
+          # An APK is already a zip archive.
+          compression-level: 0
+
+      - name: Job summary
+        env:
+          APK_NAME: ${{ steps.apk.outputs.name }}
+          APK_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          signer="debug keystore"
+          if [ -n "${USSS_UPLOAD_STORE_FILE:-}" ]; then signer="release keystore"; fi
+          {
+            echo "### usss APK ready"
+            echo
+            echo "Download **[$APK_NAME]($APK_URL)**, unzip it and open the \`.apk\` on the phone."
+            echo
+            echo "ABIs: \`$ABIS\` · signed with the $signer"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Publish GitHub release
+    needs: apk
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.apk.outputs.artifact }}
+
+      - name: Attach APK to the release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: "*.apk"
+          generate_release_notes: true
