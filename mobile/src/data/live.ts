@@ -84,10 +84,11 @@ export function createLiveSource(me: Me): DataSource {
   return {
     mode: 'live',
     me,
-    getCouple: () => backend().getCouple(),
-    createCouple: () => backend().createCouple(),
-    joinCouple: (code) => backend().joinCouple(code),
-    renewInvite: () => backend().renewInvite(),
+    // async: a missing backend URL must reject the promise, not throw synchronously.
+    getCouple: async () => backend().getCouple(),
+    createCouple: async () => backend().createCouple(),
+    joinCouple: async (code) => backend().joinCouple(code),
+    renewInvite: async () => backend().renewInvite(),
     bubble: (coupleId) => liveBubble(supabase, api, me, coupleId),
   };
 }

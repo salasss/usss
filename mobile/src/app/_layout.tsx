@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { CrashScreen } from '@/components/ui/CrashScreen';
 import { CoupleProvider, useCouple } from '@/state/couple';
 import { DataProvider } from '@/state/data';
 import { SessionProvider, useSession } from '@/state/session';
@@ -26,6 +27,9 @@ const navigationTheme: Theme = {
     notification: colors.rose,
   },
 };
+
+/** Expo Router renders this instead of the app when a render error escapes. */
+export { CrashScreen as ErrorBoundary };
 
 export default function RootLayout() {
   return (
