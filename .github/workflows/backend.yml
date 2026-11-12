@@ -1,0 +1,121 @@
+name: Backend & database
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "supabase/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "supabase/**"
+      - ".github/workflows/backend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Services run supabase/postgres: the Postgres of Supabase projects, with the
+# auth schema and pgTAP. psql reads these variables.
+env:
+  PGHOST: localhost
+  PGPORT: "5432"
+  PGUSER: postgres
+  PGPASSWORD: postgres
+  PGDATABASE: postgres
+
+jobs:
+  database:
+    name: Migrations & RLS tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: supabase/postgres:17.11.0.019
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -h 127.0.0.1"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Apply migrations
+        run: |
+          # The bare image has no Storage service: stand in for its schema.
+          psql "postgresql://supabase_admin:postgres@localhost:5432/postgres" \
+            -v ON_ERROR_STOP=1 -q -f supabase/ci/storage-schema.sql
+          for migration in supabase/migrations/*.sql; do
+            echo "::group::$migration"
+            psql -v ON_ERROR_STOP=1 -q -f "$migration"
+            echo "::endgroup::"
+          done
+
+      - name: Run pgTAP tests
+        run: |
+          status=0
+          for test in supabase/tests/database/*.test.sql; do
+            echo "::group::$test"
+            output=$(psql -v ON_ERROR_STOP=1 -At -f "$test" 2>&1) || status=1
+            echo "$output"
+            echo "::endgroup::"
+            if echo "$output" | grep -q "^not ok"; then status=1; fi
+            if ! echo "$output" | grep -qE "^1\.\.[0-9]+"; then status=1; fi
+          done
+          exit $status
+
+  api:
+    name: Rust API
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: supabase/postgres:17.11.0.019
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -h 127.0.0.1"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      CARGO_TERM_COLOR: always
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare database
+        working-directory: .
+        run: |
+          psql "postgresql://supabase_admin:postgres@localhost:5432/postgres" \
+            -v ON_ERROR_STOP=1 -q -f supabase/ci/storage-schema.sql
+          for migration in supabase/migrations/*.sql; do
+            psql -v ON_ERROR_STOP=1 -q -f "$migration"
+          done
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Tests
+        run: cargo test
