@@ -102,8 +102,10 @@ jobs:
         run: |
           apk=$(ls android/app/build/outputs/apk/release/*.apk)
           build_tools=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
-          "${build_tools}apksigner" verify --print-certs "$apk" \
-            | grep -E "Signer #1 certificate (DN|SHA-256 digest|SHA-1 digest)"
+          # Fails the step when the signature is invalid.
+          report=$("${build_tools}apksigner" verify --print-certs "$apk")
+          # Signer labels vary across build-tools versions ("Signer #1", "Signer (minSdkVersion=…)").
+          echo "$report" | grep -E "certificate (DN|SHA-256 digest|SHA-1 digest)" || echo "$report"
           ls -lh "$apk"
 
       - name: Remove release keystore
