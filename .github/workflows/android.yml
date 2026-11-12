@@ -105,8 +105,8 @@ jobs:
 
       - name: Verify APK signature
         run: |
-          apk=$(ls android/app/build/outputs/apk/release/*.apk)
-          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
+          apk=$(printf '%s\n' android/app/build/outputs/apk/release/*.apk | head -n 1)
+          build_tools=$(printf '%s\n' "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
           # Fails the step when the signature is invalid.
           report=$("${build_tools}apksigner" verify --print-certs "$apk")
           # Signer labels vary across build-tools versions ("Signer #1", "Signer (minSdkVersion=…)").
