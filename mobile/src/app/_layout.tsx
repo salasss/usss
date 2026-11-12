@@ -5,10 +5,12 @@ import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { CoupleProvider, useCouple } from '@/state/couple';
+import { DataProvider } from '@/state/data';
 import { SessionProvider, useSession } from '@/state/session';
 import { colors } from '@/theme';
 
-// Keep the splash screen until the stored session has been restored.
+// Keep the splash screen until the session and the couple are known.
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 SplashScreen.setOptions({ duration: 300, fade: true });
 
@@ -29,10 +31,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SessionProvider>
-        <ThemeProvider value={navigationTheme}>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </ThemeProvider>
+        <DataProvider>
+          <CoupleProvider>
+            <ThemeProvider value={navigationTheme}>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </ThemeProvider>
+          </CoupleProvider>
+        </DataProvider>
       </SessionProvider>
     </GestureHandlerRootView>
   );
@@ -40,11 +46,15 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { status } = useSession();
+  const couple = useCouple();
   const signedIn = status === 'signed-in';
+  const paired = couple.status === 'paired';
+  const coupleKnown = couple.status !== 'idle' && couple.status !== 'loading';
+  const ready = status !== 'loading' && (!signedIn || coupleKnown);
 
   useEffect(() => {
-    if (status !== 'loading') SplashScreen.hide();
-  }, [status]);
+    if (ready) SplashScreen.hide();
+  }, [ready]);
 
   return (
     <Stack
@@ -53,8 +63,11 @@ function RootNavigator() {
         animation: 'fade',
         contentStyle: { backgroundColor: colors.background },
       }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn && paired}>
         <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && !paired}>
+        <Stack.Screen name="pairing" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" />
