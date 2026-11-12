@@ -78,7 +78,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
       setDemo(false);
       return;
     }
-    await supabase?.auth.signOut();
+    // "local" removes this device's session before calling the server, so
+    // signing out also works offline (the server-side revocation is best effort).
+    await supabase?.auth.signOut({ scope: 'local' });
     await signOutFromGoogle();
   };
 
