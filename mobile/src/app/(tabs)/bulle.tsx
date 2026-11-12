@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.surface,
     overflow: 'hidden',
-    textTransform: 'capitalize',
   },
   loader: {
     marginVertical: spacing.lg,

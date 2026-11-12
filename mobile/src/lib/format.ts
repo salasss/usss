@@ -1,5 +1,10 @@
 const DAY = 86_400_000;
 
+/** French capitalizes the first word only: "vendredi 13 novembre" → "Vendredi 13 novembre". */
+export function capitalize(text: string): string {
+  return text ? text[0].toLocaleUpperCase('fr') + text.slice(1) : text;
+}
+
 const startOfDay = (time: number) => {
   const date = new Date(time);
   date.setHours(0, 0, 0, 0);
@@ -11,7 +16,7 @@ export function dayLabel(iso: string, now: number): string {
   const days = Math.round((startOfDay(now) - startOfDay(new Date(iso).getTime())) / DAY);
   if (days === 0) return "Aujourd'hui";
   if (days === 1) return 'Hier';
-  return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return capitalize(new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }));
 }
 
 export function sameDay(a: string, b: string): boolean {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
 import { TextField } from '@/components/ui/TextField';
 import type { EventColor } from '@/data/types';
+import { capitalize } from '@/lib/format';
 import { useBubble } from '@/state/bubble';
 import { colors, radii, spacing } from '@/theme';
 
@@ -27,7 +28,7 @@ function tomorrowEvening(): Date {
 }
 
 const formatDay = (date: Date) =>
-  date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  capitalize(date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }));
 const formatTime = (date: Date) => date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 type EventSheetProps = {
@@ -99,9 +100,7 @@ export function EventSheet({ visible, onClose }: EventSheetProps) {
       <View style={styles.row}>
         <Pressable style={styles.when} onPress={() => pick('date')} accessibilityRole="button">
           <Ionicons name="calendar-outline" size={18} color={colors.peach} />
-          <AppText variant="bodyStrong" style={styles.whenText}>
-            {formatDay(when)}
-          </AppText>
+          <AppText variant="bodyStrong">{formatDay(when)}</AppText>
         </Pressable>
         <Pressable style={styles.when} onPress={() => pick('time')} accessibilityRole="button">
           <Ionicons name="time-outline" size={18} color={colors.peach} />
@@ -145,9 +144,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: radii.pill,
     backgroundColor: colors.surfaceRaised,
-  },
-  whenText: {
-    textTransform: 'capitalize',
   },
   colors: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Sheet } from '@/components/ui/Sheet';
 import { TextField } from '@/components/ui/TextField';
 import type { MemoryCategory } from '@/data/types';
+import { capitalize } from '@/lib/format';
 import { useBubble } from '@/state/bubble';
 import { colors, radii, spacing } from '@/theme';
 
@@ -102,8 +103,10 @@ export function MemorySheet({ photo, onClose }: MemorySheetProps) {
       </ScrollView>
       <Pressable style={styles.day} onPress={pickDay} accessibilityRole="button">
         <Ionicons name="calendar-outline" size={18} color={colors.peach} />
-        <AppText variant="bodyStrong" style={styles.dayText}>
-          {day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        <AppText variant="bodyStrong">
+          {capitalize(
+            day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          )}
         </AppText>
       </Pressable>
       {error ? (
@@ -144,8 +147,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radii.pill,
     backgroundColor: colors.surfaceRaised,
-  },
-  dayText: {
-    textTransform: 'capitalize',
   },
 });
