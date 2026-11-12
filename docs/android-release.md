@@ -17,8 +17,9 @@ tag : `git tag v1.0.0 && git push origin v1.0.0`. L'APK est alors attaché à un
 **Release GitHub**, téléchargeable directement, sans zip.
 
 Par défaut, l'APK cible `arm64-v8a` (la quasi-totalité des téléphones
-récents). Pour un vieux téléphone 32 bits, lancez le workflow à la main
-(*Run workflow*) avec `armeabi-v7a,arm64-v8a`.
+récents). Lancez le workflow à la main (*Run workflow*) pour d'autres cibles :
+`armeabi-v7a,arm64-v8a` pour un vieux téléphone 32 bits, `arm64-v8a,x86_64`
+pour un émulateur Android sur PC (un APK uniquement ARM n'y démarre pas).
 
 ## Signature
 
