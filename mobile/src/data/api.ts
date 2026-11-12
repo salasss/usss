@@ -47,16 +47,25 @@ function toCouple(dto: CoupleDto): Couple {
 
 export type Api = ReturnType<typeof createApi>;
 
+/** A free host waking up may need a few seconds, not more than this. */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /** REST client of the usss backend, authenticated with the Supabase access token. */
 export function createApi(baseUrl: string, getToken: () => Promise<string | null>) {
   async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
     const token = await getToken();
     if (!token) throw new ApiError(401, 'unauthorized', 'not signed in');
 
+    // React Native's fetch never times out on its own: a sleeping or stuck
+    // server would otherwise keep the splash screen up forever.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
+    let text: string;
     try {
       response = await fetch(`${baseUrl}${path}`, {
         method,
+        signal: controller.signal,
         headers: {
           Accept: 'application/json',
           Authorization: `Bearer ${token}`,
@@ -64,12 +73,19 @@ export function createApi(baseUrl: string, getToken: () => Promise<string | null
         },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
+      text = await response.text();
     } catch {
-      throw new ApiError(0, 'network', 'network unreachable');
+      throw new ApiError(0, 'network', 'network unreachable or too slow');
+    } finally {
+      clearTimeout(timer);
     }
 
-    const text = await response.text();
-    const json = text ? (JSON.parse(text) as Record<string, unknown>) : null;
+    let json: Record<string, unknown> | null = null;
+    try {
+      json = text ? (JSON.parse(text) as Record<string, unknown>) : null;
+    } catch {
+      // Not JSON (a proxy error page...): keep the HTTP status below.
+    }
     if (!response.ok) {
       throw new ApiError(
         response.status,
