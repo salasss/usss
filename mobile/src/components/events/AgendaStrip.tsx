@@ -49,13 +49,14 @@ export function AgendaStrip() {
                   {date.getDate()}
                 </AppText>
                 <AppText variant="label" color={colors.textOnAccent} style={styles.month}>
-                  {date.toLocaleDateString('fr-FR', { weekday: 'short', month: 'short' })}
+                  {date.toLocaleDateString('fr-FR', { month: 'long' })}
                 </AppText>
                 <View style={styles.spacer} />
                 <AppText variant="bodyStrong" color={colors.textOnAccent} numberOfLines={2}>
                   {event.title}
                 </AppText>
                 <AppText variant="tiny" color={colors.textOnAccent}>
+                  {date.toLocaleDateString('fr-FR', { weekday: 'short' })} ·{' '}
                   {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 </AppText>
               </LinearGradient>
@@ -86,7 +87,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   month: {
-    textTransform: 'capitalize',
     opacity: 0.8,
   },
   spacer: {
