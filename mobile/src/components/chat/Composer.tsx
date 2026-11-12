@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_VOICE_MS, useVoiceRecorder } from '@/components/chat/useVoiceRecorder';
 import { AppText } from '@/components/ui/AppText';
+import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 import { durationLabel } from '@/lib/format';
 import { useChatActions } from '@/state/chat';
 import { colors, fonts, radii, spacing } from '@/theme';
@@ -31,6 +32,8 @@ function Action({ icon, label, onPress }: { icon: IconName; label: string; onPre
 /** Text, photos, camera, voice notes and a quick heart, as in the mockups. */
 export function Composer() {
   const insets = useSafeAreaInsets();
+  // The keyboard already covers the navigation bar: no inset while it is open.
+  const keyboardVisible = useKeyboardVisible();
   const { sendText, sendMedia, setTyping } = useChatActions();
   const voice = useVoiceRecorder();
   const [text, setText] = useState('');
@@ -99,7 +102,7 @@ export function Composer() {
   const canSend = text.trim().length > 0;
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom + spacing.sm }]}>
+    <View style={[styles.wrap, { paddingBottom: (keyboardVisible ? 0 : insets.bottom) + spacing.sm }]}>
       <View style={styles.box}>
         {voice.recording ? (
           <View style={styles.recordRow}>
