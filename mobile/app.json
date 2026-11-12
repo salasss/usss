@@ -75,7 +75,21 @@
         }
       ],
       "@react-native-google-signin/google-signin",
-      "./plugins/with-release-signing"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "usss accède à tes photos pour les partager avec ta moitié.",
+          "cameraPermission": "usss utilise l’appareil photo pour capturer vos moments."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "usss utilise le micro pour tes messages vocaux."
+        }
+      ],
+      "./plugins/with-release-signing",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
