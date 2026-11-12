@@ -243,6 +243,9 @@ function liveBubble(supabase: SupabaseClient, api: Api | null, me: Me, coupleId:
           { event: '*', schema: 'public', table, filter: `couple_id=eq.${coupleId}` },
           () => onChange(table),
         );
+        // Deletes cannot match that filter (their old row only carries the
+        // primary key): listen to them unfiltered and simply reload.
+        channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => onChange(table));
       }
       channel.subscribe();
       return () => {
