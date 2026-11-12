@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config::from_env()?;
     let addr = config.addr;
-    let app = router(AppState::new(config));
+    let app = router(AppState::new(config)?);
 
     let listener = TcpListener::bind(addr)
         .await

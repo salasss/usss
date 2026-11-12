@@ -7,6 +7,11 @@ use anyhow::Context;
 pub struct Config {
     /// Address the HTTP server binds to (`HOST` + `PORT`).
     pub addr: SocketAddr,
+    /// Supabase project URL (`SUPABASE_URL`): enables the JWKS signing keys
+    /// and the issuer check of access tokens.
+    pub supabase_url: Option<String>,
+    /// Legacy HS256 JWT secret of the project (`SUPABASE_JWT_SECRET`).
+    pub supabase_jwt_secret: Option<String>,
 }
 
 impl Config {
@@ -20,6 +25,9 @@ impl Config {
 
         Ok(Self {
             addr: SocketAddr::new(host, port),
+            supabase_url: optional_env("SUPABASE_URL")
+                .map(|url| url.trim_end_matches('/').to_owned()),
+            supabase_jwt_secret: optional_env("SUPABASE_JWT_SECRET"),
         })
     }
 }
