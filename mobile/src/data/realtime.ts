@@ -87,7 +87,8 @@ export function connectRealtime(
     if (closed || socket) return;
     listener.onStatus('connecting');
     const token = await getToken().catch(() => null);
-    if (closed) return;
+    // Another open() (timer vs. app back to foreground) may have won meanwhile.
+    if (closed || socket) return;
     if (!token) {
       listener.onStatus('closed');
       schedule();
