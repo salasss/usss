@@ -16,16 +16,36 @@ use usss_backend::{AppState, config::Config, router};
 /// HS256 secret used by the tests (never a real project secret).
 pub const TEST_SECRET: &str = "test-secret-that-is-long-enough-for-hs256";
 
+/// The pool is lazy: tests that never query the database need no server.
+const UNUSED_DATABASE: &str = "postgres://postgres:postgres@127.0.0.1:1/unused";
+
 pub fn test_config() -> Config {
     Config {
         addr: "127.0.0.1:0".parse().unwrap(),
         supabase_url: None,
         supabase_jwt_secret: Some(TEST_SECRET.to_owned()),
+        database_url: UNUSED_DATABASE.to_owned(),
     }
 }
 
 pub fn test_app() -> Router {
     router(AppState::new(test_config()).expect("app state"))
+}
+
+/// Database for integration tests: a Supabase Postgres with the migrations
+/// applied, given by `TEST_DATABASE_URL`. Tests are skipped without it.
+pub fn test_database_url() -> Option<String> {
+    std::env::var("TEST_DATABASE_URL")
+        .ok()
+        .filter(|url| !url.is_empty())
+}
+
+pub fn db_app(database_url: &str) -> Router {
+    let config = Config {
+        database_url: database_url.to_owned(),
+        ..test_config()
+    };
+    router(AppState::new(config).expect("app state"))
 }
 
 pub fn now() -> u64 {

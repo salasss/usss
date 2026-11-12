@@ -1,7 +1,13 @@
+mod couple;
 mod health;
 mod me;
 
-use axum::{Router, extract::Request, middleware, routing::get};
+use axum::{
+    Router,
+    extract::Request,
+    middleware,
+    routing::{get, post},
+};
 use tower_http::trace::TraceLayer;
 
 use crate::{auth::require_auth, state::AppState};
@@ -10,6 +16,9 @@ use crate::{auth::require_auth, state::AppState};
 pub fn router(state: AppState) -> Router {
     let protected = Router::new()
         .route("/me", get(me::me))
+        .route("/couple", get(couple::show).post(couple::create))
+        .route("/couple/invite", post(couple::renew_invite))
+        .route("/couple/join", post(couple::join))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 
     Router::new()

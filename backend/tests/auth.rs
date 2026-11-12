@@ -132,9 +132,9 @@ async fn fake_project() -> FakeProject {
 
 fn jwks_app(project: &FakeProject) -> Router {
     let config = Config {
-        addr: "127.0.0.1:0".parse().unwrap(),
         supabase_url: Some(project.url.clone()),
         supabase_jwt_secret: None,
+        ..common::test_config()
     };
     router(AppState::new(config).unwrap())
 }
@@ -190,12 +190,12 @@ async fn shared_secret_tokens_are_refused_when_only_keys_are_configured() {
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
-#[test]
-fn configuration_requires_a_way_to_verify_tokens() {
+#[tokio::test]
+async fn configuration_requires_a_way_to_verify_tokens() {
     let config = Config {
-        addr: "127.0.0.1:0".parse().unwrap(),
         supabase_url: None,
         supabase_jwt_secret: None,
+        ..common::test_config()
     };
     assert!(AppState::new(config).is_err());
 }

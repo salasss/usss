@@ -12,6 +12,8 @@ pub struct Config {
     pub supabase_url: Option<String>,
     /// Legacy HS256 JWT secret of the project (`SUPABASE_JWT_SECRET`).
     pub supabase_jwt_secret: Option<String>,
+    /// Postgres connection string of the Supabase database (`DATABASE_URL`).
+    pub database_url: String,
 }
 
 impl Config {
@@ -28,6 +30,8 @@ impl Config {
             supabase_url: optional_env("SUPABASE_URL")
                 .map(|url| url.trim_end_matches('/').to_owned()),
             supabase_jwt_secret: optional_env("SUPABASE_JWT_SECRET"),
+            database_url: optional_env("DATABASE_URL")
+                .context("DATABASE_URL is required (Supabase > Connect > Session pooler)")?,
         })
     }
 }
