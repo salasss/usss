@@ -1,13 +1,5 @@
 import { randomUUID } from 'expo-crypto';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  type PropsWithChildren,
-} from 'react';
+import { createContext, useContext, useEffect, useMemo, type PropsWithChildren } from 'react';
 import { create } from 'zustand';
 
 import type { ConnectionStatus, RealtimeConnection } from '@/data/realtime';
@@ -37,33 +29,19 @@ export const useBubbleStore = create<BubbleState>()(() => INITIAL);
 
 export type FrameListener = (frame: Record<string, unknown>) => void;
 
-type BubbleValue = {
-  data: BubbleData;
-  /** Raw realtime frames, for the chat. */
-  onFrame: (listener: FrameListener) => () => void;
-  send: (frame: Record<string, unknown>) => void;
-  setMood: (energy: number, mood: number) => void;
-  addEvent: (event: NewEvent) => Promise<void>;
-  toggleFavorite: (memory: Memory) => Promise<void>;
-  sendNote: (text: string) => void;
-  reload: () => Promise<void>;
-};
-
-const BubbleContext = createContext<BubbleValue | null>(null);
-
 const byStart = (a: CalendarEvent, b: CalendarEvent) => a.startsAt.localeCompare(b.startsAt);
 
-export function BubbleProvider({ children }: PropsWithChildren) {
-  const source = useSource();
-  const { couple, partner } = useCouple();
-  const coupleId = couple?.id ?? null;
-  const partnerId = partner?.userId ?? null;
-  const data = useMemo(() => (coupleId ? source.bubble(coupleId) : null), [source, coupleId]);
-  const connection = useRef<RealtimeConnection | null>(null);
-  const listeners = useRef(new Set<FrameListener>());
+/**
+ * The couple's live session: realtime connection, frame subscribers and the
+ * actions screens call. Plain object (not React state), created once per couple.
+ */
+function createBubbleRuntime(data: BubbleData, me: string) {
+  let connection: RealtimeConnection | null = null;
+  const listeners = new Set<FrameListener>();
+  const notify = (frame: Record<string, unknown>) => listeners.forEach((listen) => listen(frame));
+  const send = (frame: Record<string, unknown>) => connection?.send(frame);
 
-  const reload = useCallback(async () => {
-    if (!data) return;
+  const reload = async () => {
     const [moods, events, memories] = await Promise.all([
       data.listMoods().catch(() => null),
       data.listEvents().catch(() => null),
@@ -74,79 +52,76 @@ export function BubbleProvider({ children }: PropsWithChildren) {
       events: events ? [...events].sort(byStart) : state.events,
       memories: memories ?? state.memories,
     }));
-  }, [data]);
+  };
 
-  useEffect(() => {
-    if (!data) return;
-    useBubbleStore.setState(INITIAL, true);
-    void reload();
-
-    const notify = (frame: Record<string, unknown>) => listeners.current.forEach((listen) => listen(frame));
-    const conn = data.connect({
-      onStatus: (status) => useBubbleStore.setState({ connection: status }),
-      onEvent: (event) => {
-        switch (event.type) {
-          case 'ready':
-            useBubbleStore.setState({ partnerOnline: event.partnerOnline });
-            break;
-          case 'presence':
-            if (event.userId === partnerId) useBubbleStore.setState({ partnerOnline: event.online });
-            break;
-          case 'mood':
-            useBubbleStore.setState((state) => ({
-              moods: { ...state.moods, [event.mood.userId]: event.mood },
-            }));
-            break;
-          case 'resync':
-            void reload();
-            notify({ type: 'resync' });
-            break;
-          case 'frame':
-            notify(event.frame);
-            break;
-          case 'error':
-            if (__DEV__) console.warn('realtime error', event.code, event.message);
-            break;
-        }
-      },
-    });
-    connection.current = conn;
-    return () => {
-      conn.close();
-      connection.current = null;
-    };
-  }, [data, partnerId, reload]);
-
-  if (!data) return null;
-
-  const send = (frame: Record<string, unknown>) => connection.current?.send(frame);
-
-  const value: BubbleValue = {
+  return {
     data,
     send,
     reload,
-    onFrame: (listener) => {
-      listeners.current.add(listener);
+
+    /** Raw realtime frames, for the chat. */
+    onFrame: (listener: FrameListener) => {
+      listeners.add(listener);
       return () => {
-        listeners.current.delete(listener);
+        listeners.delete(listener);
       };
     },
-    setMood: (energy, mood) => {
-      const me = source.me.id;
+
+    start(partnerId: string | null) {
+      useBubbleStore.setState(INITIAL, true);
+      void reload();
+      connection = data.connect({
+        onStatus: (status) => useBubbleStore.setState({ connection: status }),
+        onEvent: (event) => {
+          switch (event.type) {
+            case 'ready':
+              useBubbleStore.setState({ partnerOnline: event.partnerOnline });
+              break;
+            case 'presence':
+              if (event.userId === partnerId) useBubbleStore.setState({ partnerOnline: event.online });
+              break;
+            case 'mood':
+              useBubbleStore.setState((state) => ({
+                moods: { ...state.moods, [event.mood.userId]: event.mood },
+              }));
+              break;
+            case 'resync':
+              void reload();
+              notify({ type: 'resync' });
+              break;
+            case 'frame':
+              notify(event.frame);
+              break;
+            case 'error':
+              if (__DEV__) console.warn('realtime error', event.code, event.message);
+              break;
+          }
+        },
+      });
+    },
+
+    stop() {
+      connection?.close();
+      connection = null;
+    },
+
+    setMood(energy: number, mood: number) {
       useBubbleStore.setState((state) => ({
         moods: { ...state.moods, [me]: { userId: me, energy, mood, updatedAt: new Date().toISOString() } },
       }));
       send({ type: 'mood.set', energy, mood });
     },
-    addEvent: async (event) => {
+
+    async addEvent(event: NewEvent) {
       const created = await data.addEvent(event);
       useBubbleStore.setState((state) => ({ events: [...state.events, created].sort(byStart) }));
     },
-    toggleFavorite: async (memory) => {
+
+    async toggleFavorite(memory: Memory) {
       const favorite = !memory.isFavorite;
-      const apply = (value: boolean) =>
+      const apply = (isFavorite: boolean) =>
         useBubbleStore.setState((state) => ({
-          memories: state.memories.map((m) => (m.id === memory.id ? { ...m, isFavorite: value } : m)),
+          memories: state.memories.map((m) => (m.id === memory.id ? { ...m, isFavorite } : m)),
         }));
       apply(favorite);
       try {
@@ -155,12 +130,38 @@ export function BubbleProvider({ children }: PropsWithChildren) {
         apply(!favorite);
       }
     },
-    sendNote: (text) => {
+
+    sendNote(text: string) {
       send({ type: 'message.send', id: randomUUID(), kind: 'text', body: text });
     },
   };
+}
 
-  return <BubbleContext.Provider value={value}>{children}</BubbleContext.Provider>;
+type BubbleValue = ReturnType<typeof createBubbleRuntime>;
+
+const BubbleContext = createContext<BubbleValue | null>(null);
+
+/** Opens the couple's bubble while the tabs are shown. */
+export function BubbleProvider({ children }: PropsWithChildren) {
+  const source = useSource();
+  const { couple, partner } = useCouple();
+  const coupleId = couple?.id ?? null;
+  const partnerId = partner?.userId ?? null;
+
+  const runtime = useMemo(
+    () => (coupleId ? createBubbleRuntime(source.bubble(coupleId), source.me.id) : null),
+    [source, coupleId],
+  );
+
+  useEffect(() => {
+    if (!runtime) return;
+    runtime.start(partnerId);
+    return () => runtime.stop();
+  }, [runtime, partnerId]);
+
+  if (!runtime) return null;
+
+  return <BubbleContext.Provider value={runtime}>{children}</BubbleContext.Provider>;
 }
 
 export function useBubble(): BubbleValue {

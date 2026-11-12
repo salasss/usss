@@ -6,6 +6,8 @@ import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-nativ
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { AppText } from '@/components/ui/AppText';
+import { useUnreadCount } from '@/state/chat';
+import { useSession } from '@/state/session';
 import { colors, radii, shadows, spacing, TAB_BAR_GAP, TAB_BAR_HEIGHT } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -24,6 +26,7 @@ const SPRING = { damping: 18, stiffness: 190, mass: 0.9 };
 
 export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
   const [width, setWidth] = useState(0);
+  const unread = useUnreadCount(useSession().me?.id);
   const position = useSharedValue(state.index);
   const itemWidth = width > 0 ? (width - PADDING * 2) / state.routes.length : 0;
 
@@ -72,11 +75,16 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, insets }: B
               onPress={onPress}
               onLongPress={() => emitter.emit({ type: 'tabLongPress', target: route.key })}
               style={styles.item}>
-              <Ionicons
-                name={focused ? icons.active : icons.idle}
-                size={21}
-                color={focused ? colors.cream : colors.textMuted}
-              />
+              <View>
+                <Ionicons
+                  name={focused ? icons.active : icons.idle}
+                  size={21}
+                  color={focused ? colors.cream : colors.textMuted}
+                />
+                {route.name === 'bulle' && unread > 0 ? (
+                  <View style={styles.badge} accessibilityLabel={`${unread} non lus`} />
+                ) : null}
+              </View>
               <AppText variant="tiny" color={focused ? colors.cream : colors.textMuted}>
                 {label}
               </AppText>
@@ -120,5 +128,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
     borderRadius: radii.pill,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.heart,
+    borderWidth: 2,
+    borderColor: colors.surface,
   },
 });

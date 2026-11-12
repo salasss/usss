@@ -1,9 +1,15 @@
 import type { RealtimeConnection, RealtimeListener } from '@/data/realtime';
-import type { CalendarEvent, Couple, Memory, Mood, NewEvent } from '@/data/types';
+import type { CalendarEvent, Couple, Memory, Message, Mood, NewEvent } from '@/data/types';
 import type { Me } from '@/state/session';
+
+export type MediaKind = 'image' | 'voice';
 
 /** Data of one couple, available once both partners are in. */
 export interface BubbleData {
+  /** Newest first; `before` pages back in time. */
+  listMessages(before?: string): Promise<Message[]>;
+  /** Uploads a local file into the couple's private folder, returns its path. */
+  uploadMedia(localUri: string, kind: MediaKind, mimeType: string): Promise<string>;
   listMoods(): Promise<Mood[]>;
   listEvents(): Promise<CalendarEvent[]>;
   addEvent(event: NewEvent): Promise<CalendarEvent>;

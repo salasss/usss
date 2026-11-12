@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { randomUUID } from 'expo-crypto';
 
 import { ApiError, createApi, type Api } from '@/data/api';
+import { MESSAGES_PAGE, messageFromDto, type MessageDto, type ReactionDto } from '@/data/messages';
 import { connectRealtime, moodFromDto, type RealtimeConnection } from '@/data/realtime';
 import type { BubbleData, DataSource } from '@/data/source';
 import type { CalendarEvent, Memory, MemoryCategory, EventColor } from '@/data/types';
@@ -74,6 +76,34 @@ function liveBubble(supabase: SupabaseClient, api: Api | null, me: Me, coupleId:
   const signed = new Map<string, { url: string; expiresAt: number }>();
 
   return {
+    async listMessages(before) {
+      let query = supabase
+        .from('messages')
+        .select(
+          'id, sender_id, kind, body, media_path, duration_ms, created_at, read_at, message_reactions(user_id, emoji)',
+        )
+        .order('created_at', { ascending: false })
+        .limit(MESSAGES_PAGE);
+      if (before) query = query.lt('created_at', before);
+      const { data, error } = await query;
+      fail(error);
+      type Row = MessageDto & { message_reactions: ReactionDto[] | null };
+      return ((data ?? []) as Row[]).map((row) => messageFromDto(row, row.message_reactions ?? []));
+    },
+
+    async uploadMedia(localUri, kind, mimeType) {
+      const extension =
+        kind === 'voice' ? 'm4a' : mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+      // First folder = couple: required by the storage policies and the backend.
+      const path = `${coupleId}/${kind}/${randomUUID()}.${extension}`;
+      const body = await (await fetch(localUri)).arrayBuffer();
+      const { error } = await supabase.storage
+        .from(MEDIA_BUCKET)
+        .upload(path, body, { contentType: mimeType, upsert: false });
+      fail(error);
+      return path;
+    },
+
     async listMoods() {
       const { data, error } = await supabase.from('moods').select('user_id, energy, mood, updated_at');
       fail(error);
