@@ -17,6 +17,9 @@ export function AppText({
 }: AppTextProps) {
   return (
     <Text
+      // Android's default "highQuality" line breaking can wrap a line that was
+      // measured as fitting with the custom fonts, which clips the last line.
+      textBreakStrategy="simple"
       {...rest}
       style={[typography[variant], { color }, align ? { textAlign: align } : null, style]}
     />
