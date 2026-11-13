@@ -83,7 +83,8 @@ export function DailyMomentCard() {
           value={note}
           onChangeText={setNote}
           onSubmitEditing={send}
-          placeholder={`Laisser un petit mot à ${partnerName}…`}
+          // The confirmation replaces the hint: the card keeps its height.
+          placeholder={sent ? 'Envoyé dans votre bulle 💌' : `Laisser un petit mot à ${partnerName}…`}
           placeholderTextColor={colors.textMuted}
           returnKeyType="send"
           maxLength={500}
@@ -93,14 +94,16 @@ export function DailyMomentCard() {
           <Ionicons name="paper-plane" size={20} color={note.trim() ? colors.peach : colors.textMuted} />
         </Pressable>
       </View>
-      {sent ? (
-        <AppText variant="caption" color={colors.textOnCream}>
-          Envoyé dans votre bulle 💌
-        </AppText>
-      ) : null}
     </Card>
   );
 }
+
+/**
+ * Same height with or without a memory: the card must not grow once the
+ * memories arrive, the row below it would not follow during its entering
+ * animation and the two would overlap.
+ */
+const MOMENT_HEIGHT = 180;
 
 const styles = StyleSheet.create({
   card: {
@@ -123,7 +126,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   photo: {
-    height: 180,
+    height: MOMENT_HEIGHT,
     borderRadius: radii.lg,
   },
   react: {
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   empty: {
-    height: 140,
+    height: MOMENT_HEIGHT,
     borderRadius: radii.lg,
     backgroundColor: colors.creamDeep,
     alignItems: 'center',
