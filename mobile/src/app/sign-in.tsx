@@ -72,7 +72,7 @@ export default function SignInScreen() {
         ) : null}
 
         <AppText variant="tiny" color={colors.textMuted} align="center" style={styles.legal}>
-          Vos échanges restent entre vous deux : personne d&apos;autre ne peut les lire.
+          Vos échanges restent entre vous deux.
         </AppText>
       </Animated.View>
     </View>
