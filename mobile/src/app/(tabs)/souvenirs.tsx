@@ -96,7 +96,11 @@ export default function MemoriesScreen() {
         <TextField value={query} onChangeText={setQuery} placeholder="Rechercher un souvenir…" autoFocus />
       ) : null}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.bleed}
+        contentContainerStyle={styles.filters}>
         {FILTERS.map((item) => (
           <Pressable
             key={item.key}
@@ -166,8 +170,13 @@ const styles = StyleSheet.create({
   headerButtonOn: {
     backgroundColor: colors.surfaceRaised,
   },
+  // Horizontal lists scroll to the screen edges, not to the page margin.
+  bleed: {
+    marginHorizontal: -spacing.xl,
+  },
   filters: {
     gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
   },
   filter: {
     height: 36,

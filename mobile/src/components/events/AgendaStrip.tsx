@@ -31,7 +31,11 @@ export function AgendaStrip() {
 
   return (
     <>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.bleed}
+        contentContainerStyle={styles.strip}>
         {events.map((event) => {
           const date = new Date(event.startsAt);
           return (
@@ -76,9 +80,13 @@ export function AgendaStrip() {
 }
 
 const styles = StyleSheet.create({
+  // The strip scrolls to the screen edges, not to the page margin.
+  bleed: {
+    marginHorizontal: -spacing.xl,
+  },
   strip: {
     gap: spacing.md,
-    paddingRight: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   card: {
     width: 138,
