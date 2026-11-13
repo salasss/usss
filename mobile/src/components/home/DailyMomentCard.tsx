@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   noteInput: {
     flex: 1,
     color: colors.text,
-    fontFamily: fonts.body,
+    fontFamily: fonts.regular,
     fontSize: 14,
   },
 });

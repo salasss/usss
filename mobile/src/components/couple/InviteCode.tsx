@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     color: colors.cream,
     fontFamily: fonts.display,
-    fontWeight: '700',
     fontSize: 24,
     letterSpacing: 4,
     textAlign: 'center',

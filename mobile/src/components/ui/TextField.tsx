@@ -24,8 +24,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
     color: colors.text,
-    fontFamily: fonts.body,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     fontSize: 15,
   },
 });

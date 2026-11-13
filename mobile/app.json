@@ -34,44 +34,14 @@
       [
         "expo-font",
         {
-          "android": {
-            "fonts": [
-              {
-                "fontFamily": "Fraunces",
-                "fontDefinitions": [
-                  {
-                    "path": "./node_modules/@expo-google-fonts/fraunces/600SemiBold/Fraunces_600SemiBold.ttf",
-                    "weight": 600
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/fraunces/700Bold/Fraunces_700Bold.ttf",
-                    "weight": 700
-                  }
-                ]
-              },
-              {
-                "fontFamily": "PlusJakartaSans",
-                "fontDefinitions": [
-                  {
-                    "path": "./node_modules/@expo-google-fonts/plus-jakarta-sans/400Regular/PlusJakartaSans_400Regular.ttf",
-                    "weight": 400
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/plus-jakarta-sans/500Medium/PlusJakartaSans_500Medium.ttf",
-                    "weight": 500
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/plus-jakarta-sans/600SemiBold/PlusJakartaSans_600SemiBold.ttf",
-                    "weight": 600
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/plus-jakarta-sans/700Bold/PlusJakartaSans_700Bold.ttf",
-                    "weight": 700
-                  }
-                ]
-              }
-            ]
-          }
+          "fonts": [
+            "./node_modules/@expo-google-fonts/fraunces/600SemiBold/Fraunces_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/fraunces/700Bold/Fraunces_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/400Regular/PlusJakartaSans_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/500Medium/PlusJakartaSans_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/600SemiBold/PlusJakartaSans_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/plus-jakarta-sans/700Bold/PlusJakartaSans_700Bold.ttf"
+          ]
         }
       ],
       "@react-native-google-signin/google-signin",

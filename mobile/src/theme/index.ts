@@ -41,23 +41,31 @@ export const gradients = {
   mint: ['#B8EBCB', '#8FCFE0'],
 } as const satisfies Record<string, readonly [string, string, ...string[]]>;
 
-/** Font families embedded by the expo-font config plugin (see app.json). */
+/**
+ * Font files embedded by the expo-font config plugin (see app.json), one
+ * family per weight. No fontWeight on top: Android would measure the text
+ * with one face and draw it with another, clipping the end of words.
+ */
 export const fonts = {
-  display: 'Fraunces',
-  body: 'PlusJakartaSans',
+  display: 'Fraunces_700Bold',
+  displaySemiBold: 'Fraunces_600SemiBold',
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
 } as const;
 
 export const typography = {
-  logo: { fontFamily: fonts.display, fontWeight: '700', fontSize: 34, lineHeight: 40, letterSpacing: -0.5 },
-  hero: { fontFamily: fonts.display, fontWeight: '700', fontSize: 32, lineHeight: 38, letterSpacing: -0.4 },
-  title: { fontFamily: fonts.display, fontWeight: '700', fontSize: 26, lineHeight: 32, letterSpacing: -0.2 },
-  subtitle: { fontFamily: fonts.display, fontWeight: '600', fontSize: 20, lineHeight: 26 },
-  heading: { fontFamily: fonts.body, fontWeight: '700', fontSize: 16, lineHeight: 22 },
-  body: { fontFamily: fonts.body, fontWeight: '400', fontSize: 15, lineHeight: 21 },
-  bodyStrong: { fontFamily: fonts.body, fontWeight: '600', fontSize: 15, lineHeight: 21 },
-  label: { fontFamily: fonts.body, fontWeight: '600', fontSize: 13, lineHeight: 17 },
-  caption: { fontFamily: fonts.body, fontWeight: '500', fontSize: 12, lineHeight: 16 },
-  tiny: { fontFamily: fonts.body, fontWeight: '600', fontSize: 11, lineHeight: 14 },
+  logo: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.5 },
+  hero: { fontFamily: fonts.display, fontSize: 32, lineHeight: 38, letterSpacing: -0.4 },
+  title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, letterSpacing: -0.2 },
+  subtitle: { fontFamily: fonts.displaySemiBold, fontSize: 20, lineHeight: 26 },
+  heading: { fontFamily: fonts.bold, fontSize: 16, lineHeight: 22 },
+  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 21 },
+  bodyStrong: { fontFamily: fonts.semiBold, fontSize: 15, lineHeight: 21 },
+  label: { fontFamily: fonts.semiBold, fontSize: 13, lineHeight: 17 },
+  caption: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16 },
+  tiny: { fontFamily: fonts.semiBold, fontSize: 11, lineHeight: 14 },
 } as const satisfies Record<string, TextStyle>;
 
 export type TypographyVariant = keyof typeof typography;

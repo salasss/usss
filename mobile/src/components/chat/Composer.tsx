@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     color: colors.text,
-    fontFamily: fonts.body,
+    fontFamily: fonts.regular,
     fontSize: 15,
   },
   actions: {
