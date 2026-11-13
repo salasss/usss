@@ -1,4 +1,5 @@
 mod couple;
+mod devices;
 mod health;
 mod me;
 mod ws;
@@ -20,6 +21,10 @@ pub fn router(state: AppState) -> Router {
         .route("/couple", get(couple::show).post(couple::create))
         .route("/couple/invite", post(couple::renew_invite))
         .route("/couple/join", post(couple::join))
+        .route(
+            "/devices",
+            post(devices::register).delete(devices::unregister),
+        )
         .route("/ws", get(ws::connect))
         .route_layer(middleware::from_fn_with_state(state.clone(), require_auth));
 

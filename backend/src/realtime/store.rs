@@ -22,6 +22,12 @@ pub struct NewMessage<'a> {
     pub duration_ms: Option<i32>,
 }
 
+/// A stored message, and whether this call created it (`false` for a resend).
+pub struct Stored {
+    pub message: MessageRow,
+    pub created: bool,
+}
+
 /// Inserts the message once; a resend with the same id returns the stored
 /// row. `None` when the id is already used outside this couple.
 pub async fn insert_message(
@@ -29,7 +35,7 @@ pub async fn insert_message(
     couple: Uuid,
     sender: Uuid,
     message: NewMessage<'_>,
-) -> Result<Option<MessageRow>, sqlx::Error> {
+) -> Result<Option<Stored>, sqlx::Error> {
     let inserted = sqlx::query_as::<_, MessageRow>(
         "insert into public.messages (id, couple_id, sender_id, kind, body, media_path, duration_ms)
          values ($1, $2, $3, $4, $5, $6, $7)
@@ -46,11 +52,14 @@ pub async fn insert_message(
     .fetch_optional(pool)
     .await?;
 
-    if inserted.is_some() {
-        return Ok(inserted);
+    if let Some(message) = inserted {
+        return Ok(Some(Stored {
+            message,
+            created: true,
+        }));
     }
 
-    sqlx::query_as::<_, MessageRow>(
+    let existing = sqlx::query_as::<_, MessageRow>(
         "select id, couple_id, sender_id, kind, body, media_path, duration_ms, created_at, read_at
          from public.messages
          where id = $1 and couple_id = $2 and sender_id = $3",
@@ -59,7 +68,11 @@ pub async fn insert_message(
     .bind(couple)
     .bind(sender)
     .fetch_optional(pool)
-    .await
+    .await?;
+    Ok(existing.map(|message| Stored {
+        message,
+        created: false,
+    }))
 }
 
 /// Marks what the partner sent up to `until` as read; returns how many.

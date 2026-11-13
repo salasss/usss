@@ -15,7 +15,7 @@ use super::{
     protocol::{ClientEvent, MessageKind, ServerEvent},
     store::{self, NewMessage},
 };
-use crate::{auth::AuthUser, state::AppState};
+use crate::{auth::AuthUser, push, state::AppState};
 
 /// Keep-alive ping, answered automatically by the phone.
 const PING_EVERY: Duration = Duration::from_secs(25);
@@ -173,8 +173,15 @@ async fn handle(
                 duration_ms,
             };
             match store::insert_message(db, couple, me, message).await {
-                Ok(Some(message)) => {
-                    hub.publish(couple, &ServerEvent::Message { message }, None);
+                Ok(Some(stored)) => {
+                    // A resend after a reconnection was already notified.
+                    if stored.created {
+                        push::notify_partner(state, couple, me, &stored.message);
+                    }
+                    let event = ServerEvent::Message {
+                        message: stored.message,
+                    };
+                    hub.publish(couple, &event, None);
                     None
                 }
                 Ok(None) => Some(ServerEvent::error(
