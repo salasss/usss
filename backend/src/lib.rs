@@ -5,6 +5,7 @@ pub mod config;
 pub mod couple;
 pub mod db;
 pub mod error;
+pub mod push;
 pub mod realtime;
 pub mod routes;
 pub mod state;

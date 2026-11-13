@@ -2,6 +2,8 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Context;
 
+use crate::push::{self, ServiceAccount};
+
 /// Runtime configuration, read from the environment (and from `.env` in development).
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -14,6 +16,11 @@ pub struct Config {
     pub supabase_jwt_secret: Option<String>,
     /// Postgres connection string of the Supabase database (`DATABASE_URL`).
     pub database_url: String,
+    /// Firebase service account key (`FCM_SERVICE_ACCOUNT`, JSON or base64 of
+    /// it): push notifications are disabled without it.
+    pub fcm_service_account: Option<ServiceAccount>,
+    /// Base URL of the FCM HTTP v1 API (tests point it to a local server).
+    pub fcm_api_url: String,
 }
 
 impl Config {
@@ -32,6 +39,13 @@ impl Config {
             supabase_jwt_secret: optional_env("SUPABASE_JWT_SECRET"),
             database_url: optional_env("DATABASE_URL")
                 .context("DATABASE_URL is required (Supabase > Connect > Session pooler)")?,
+            fcm_service_account: optional_env("FCM_SERVICE_ACCOUNT")
+                .map(|raw| ServiceAccount::parse(&raw))
+                .transpose()
+                .context(
+                    "FCM_SERVICE_ACCOUNT must be a Firebase service account key (JSON or base64)",
+                )?,
+            fcm_api_url: push::DEFAULT_API_URL.to_owned(),
         })
     }
 }

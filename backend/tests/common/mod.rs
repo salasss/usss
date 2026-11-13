@@ -25,6 +25,8 @@ pub fn test_config() -> Config {
         supabase_url: None,
         supabase_jwt_secret: Some(TEST_SECRET.to_owned()),
         database_url: UNUSED_DATABASE.to_owned(),
+        fcm_service_account: None,
+        fcm_api_url: usss_backend::push::DEFAULT_API_URL.to_owned(),
     }
 }
 
