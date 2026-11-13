@@ -80,6 +80,28 @@ Renvoyer un `message.send` avec le même `id` après une reconnexion ne crée
 pas de doublon. Un ping toutes les 25 s maintient la connexion ; sans signe de
 vie pendant 70 s, elle est fermée.
 
+## Notifications push
+
+Quand un message est enregistré et que le ou la partenaire n'a aucune
+connexion `/ws` ouverte (app fermée ou en arrière-plan), le backend notifie
+chacun de ses téléphones via Firebase Cloud Messaging (API HTTP v1), dans une
+tâche à part : la conversation n'attend jamais FCM. Titre : le prénom de
+l'expéditeur ; texte : le message raccourci à 120 caractères, « 📷 Photo » ou
+« 🎤 Message vocal ». Un renvoi après reconnexion ne notifie pas deux fois.
+
+- `POST /devices` `{ "token": "<jeton FCM>" }` : ce téléphone reçoit les
+  notifications de l'appelant (le jeton lui est transféré si un autre compte
+  l'avait) ; dix téléphones au plus par personne.
+- `DELETE /devices` `{ "token": "…" }` : plus de notifications ici
+  (déconnexion). Les deux répondent `204`, ou `400` pour un jeton invalide.
+
+Le module [`src/push`](src/push) signe un JWT RS256 avec la clé du compte de
+service, l'échange contre un jeton d'accès OAuth2 gardé en cache jusqu'à peu
+avant son expiration, et supprime les jetons que FCM ne connaît plus
+(`UNREGISTERED`). Sans `FCM_SERVICE_ACCOUNT`, le push est désactivé (un
+message le signale au démarrage). Mise en place :
+[docs/push-notifications.md](../docs/push-notifications.md).
+
 ## Routes
 
 | Méthode | Route            | Auth | Description                              |
@@ -90,6 +112,8 @@ vie pendant 70 s, elle est fermée.
 | POST    | `/couple`        | oui  | Créer le couple et son code d'invitation |
 | POST    | `/couple/invite` | oui  | Renouveler le code en attendant l'autre  |
 | POST    | `/couple/join`   | oui  | Rejoindre avec un code                   |
+| POST    | `/devices`       | oui  | Enregistrer le jeton push du téléphone   |
+| DELETE  | `/devices`       | oui  | Retirer le jeton push (déconnexion)      |
 | GET     | `/ws`            | oui  | Canal temps réel du couple (WebSocket)   |
 
 ## Déploiement
@@ -109,6 +133,7 @@ docker run -p 8080:8080 --env-file backend/.env usss-backend
 | `SUPABASE_URL`        | `https://<projet>.supabase.co`                                |
 | `DATABASE_URL`        | chaîne *Session pooler* (port 5432) de Supabase, `sslmode=require` |
 | `SUPABASE_JWT_SECRET` | uniquement pour les projets signant encore en HS256           |
+| `FCM_SERVICE_ACCOUNT` | facultatif : clé du compte de service Firebase (JSON ou base64) pour les notifications push |
 
 Ensuite, renseignez l'URL publique HTTPS du backend dans le secret GitHub
 `EXPO_PUBLIC_API_URL` : le prochain APK s'y connectera. Sur une offre gratuite
@@ -116,9 +141,13 @@ qui met le service en veille, la Bulle se reconnecte d'elle-même au réveil.
 
 ## Tests
 
-Les tests d'intégration du couple utilisent une base Supabase Postgres avec
-les migrations appliquées ; ils sont ignorés sans `TEST_DATABASE_URL` :
+Les tests d'intégration du couple, du temps réel et du push utilisent une base
+Supabase Postgres avec les migrations appliquées ; ils sont ignorés sans
+`TEST_DATABASE_URL` :
 
 ```bash
 TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres cargo test
 ```
+
+Ceux du push lancent un faux Firebase local (jeton OAuth et API FCM) : aucun
+compte Firebase n'est nécessaire.
