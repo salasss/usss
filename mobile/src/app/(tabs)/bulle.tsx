@@ -119,6 +119,7 @@ export default function BubbleScreen() {
 
       <ReactionPicker
         visible={reactingTo !== null}
+        message={reactingTo}
         current={reactingTo?.reactions[me]}
         onClose={() => setReactingTo(null)}
         onPick={(emoji) => {
