@@ -54,6 +54,9 @@ export interface DataSource {
   createCouple(): Promise<Couple>;
   joinCouple(code: string): Promise<Couple>;
   renewInvite(): Promise<Couple>;
+  /** Push notifications: registers or removes the FCM token of this phone. */
+  registerDevice(token: string): Promise<void>;
+  unregisterDevice(token: string): Promise<void>;
 
   bubble(coupleId: string): BubbleData;
 }

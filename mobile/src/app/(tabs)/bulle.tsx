@@ -14,6 +14,7 @@ import { AppText } from '@/components/ui/AppText';
 import type { Message } from '@/data/types';
 import { useNow } from '@/hooks/use-now';
 import { dayLabel, sameDay } from '@/lib/format';
+import { setChatOnScreen } from '@/lib/notifications';
 import { useChatActions, useChatStore, useUnreadCount } from '@/state/chat';
 import { useCouple } from '@/state/couple';
 import { useSource } from '@/state/data';
@@ -52,6 +53,12 @@ export default function BubbleScreen() {
   useEffect(() => {
     if (focused && unread > 0) markRead();
   }, [focused, unread, markRead]);
+
+  // Message notifications are useless while the conversation is on screen.
+  useEffect(() => {
+    setChatOnScreen(focused);
+    return () => setChatOnScreen(false);
+  }, [focused]);
 
   const items = useMemo(() => buildItems(messages, now), [messages, now]);
   const lastMine = messages.find((m) => m.senderId === me && m.status === 'sent');

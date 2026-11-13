@@ -3,12 +3,14 @@ import { Tabs } from 'expo-router/js-tabs';
 import { TabBar } from '@/components/navigation/TabBar';
 import { BubbleProvider } from '@/state/bubble';
 import { ChatSync } from '@/state/chat';
+import { PushSync } from '@/state/push';
 import { colors } from '@/theme';
 
 export default function TabsLayout() {
   return (
     <BubbleProvider>
       <ChatSync />
+      <PushSync />
       <Tabs
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{

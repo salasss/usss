@@ -42,6 +42,9 @@ export function createDemoSource(me: Me): DataSource {
     createCouple: async () => couple,
     joinCouple: async () => couple,
     renewInvite: async () => couple,
+    // No server, no notifications.
+    registerDevice: async () => undefined,
+    unregisterDevice: async () => undefined,
     bubble: () => demoBubble(me),
   };
 }

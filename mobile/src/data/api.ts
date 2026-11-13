@@ -52,7 +52,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 /** REST client of the usss backend, authenticated with the Supabase access token. */
 export function createApi(baseUrl: string, getToken: () => Promise<string | null>) {
-  async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+  async function request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<T> {
     const token = await getToken();
     if (!token) throw new ApiError(401, 'unauthorized', 'not signed in');
 
@@ -111,6 +111,10 @@ export function createApi(baseUrl: string, getToken: () => Promise<string | null
     createCouple: () => couple('/couple', 'POST').then(required),
     joinCouple: (code: string) => couple('/couple/join', 'POST', { code }).then(required),
     renewInvite: () => couple('/couple/invite', 'POST').then(required),
+    /** This phone receives the notifications of the signed-in person (FCM token). */
+    registerDevice: (token: string) => request<null>('POST', '/devices', { token }).then(() => undefined),
+    /** No more notifications on this phone (sign-out). */
+    unregisterDevice: (token: string) => request<null>('DELETE', '/devices', { token }).then(() => undefined),
     /** WebSocket endpoint of the realtime channel. */
     socketUrl: () => `${baseUrl.replace(/^http/, 'ws')}/ws`,
     getToken,

@@ -6,6 +6,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { CrashScreen } from '@/components/ui/CrashScreen';
+import { setUpNotifications } from '@/lib/notifications';
 import { CoupleProvider, useCouple } from '@/state/couple';
 import { DataProvider } from '@/state/data';
 import { SessionProvider, useSession } from '@/state/session';
@@ -14,6 +15,8 @@ import { colors } from '@/theme';
 // Keep the splash screen until the session and the couple are known.
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 SplashScreen.setOptions({ duration: 300, fade: true });
+// Before any notification can arrive with the app open.
+setUpNotifications();
 
 const navigationTheme: Theme = {
   ...DarkTheme,

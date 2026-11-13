@@ -6,6 +6,7 @@ import { Logo } from '@/components/brand/Logo';
 import { AppText } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { signOutFromGoogle } from '@/lib/google-auth';
+import { forgetDevice } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing } from '@/theme';
 
@@ -18,6 +19,7 @@ export function CrashScreen({ retry }: ErrorBoundaryProps) {
 
   const signOutAndRetry = async () => {
     setBusy(true);
+    await forgetDevice();
     await supabase?.auth.signOut({ scope: 'local' }).catch(() => undefined);
     await signOutFromGoogle();
     setBusy(false);

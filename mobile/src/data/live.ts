@@ -89,6 +89,8 @@ export function createLiveSource(me: Me): DataSource {
     createCouple: async () => backend().createCouple(),
     joinCouple: async (code) => backend().joinCouple(code),
     renewInvite: async () => backend().renewInvite(),
+    registerDevice: async (token) => backend().registerDevice(token),
+    unregisterDevice: async (token) => backend().unregisterDevice(token),
     bubble: (coupleId) => liveBubble(supabase, api, me, coupleId),
   };
 }

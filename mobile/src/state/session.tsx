@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, type PropsWithChildren 
 
 import { isGoogleConfigured } from '@/lib/env';
 import { getGoogleIdToken, signOutFromGoogle } from '@/lib/google-auth';
+import { forgetDevice } from '@/lib/notifications';
 import { requireSupabase, supabase } from '@/lib/supabase';
 
 export type Me = {
@@ -78,6 +79,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
       setDemo(false);
       return;
     }
+    // While still signed in: this phone stops receiving this account's notifications.
+    await forgetDevice();
     // "local" removes this device's session before calling the server, so
     // signing out also works offline (the server-side revocation is best effort).
     await supabase?.auth.signOut({ scope: 'local' });
