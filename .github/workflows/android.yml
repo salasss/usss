@@ -75,6 +75,21 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Add Firebase configuration
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          # Optional: without it the APK works, only without push notifications.
+          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
+            echo "GOOGLE_SERVICES_JSON is not set: building without push notifications."
+            exit 0
+          fi
+          printf '%s' "$GOOGLE_SERVICES_JSON" | base64 --decode > google-services.json
+          if ! node -e "JSON.parse(require('fs').readFileSync('google-services.json', 'utf8'))" 2>/dev/null; then
+            echo "::error title=GOOGLE_SERVICES_JSON::the secret is not the base64 of google-services.json"
+            exit 1
+          fi
+
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
 
@@ -144,13 +159,19 @@ jobs:
         run: |
           signer="debug keystore"
           if [ -n "${USSS_UPLOAD_STORE_FILE:-}" ]; then signer="release keystore"; fi
+          push="without push notifications (no GOOGLE_SERVICES_JSON)"
+          if [ -f google-services.json ]; then push="with push notifications"; fi
           {
             echo "### usss APK ready"
             echo
             echo "Download **[$APK_NAME]($APK_URL)**, unzip it and open the \`.apk\` on the phone."
             echo
-            echo "ABIs: \`$ABIS\` · signed with the $signer"
+            echo "ABIs: \`$ABIS\` · signed with the $signer · $push"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove Firebase configuration
+        if: always()
+        run: rm -f google-services.json android/app/google-services.json
 
   release:
     name: Publish GitHub release
